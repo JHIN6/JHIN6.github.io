@@ -3,41 +3,68 @@ import {
   Button,
   CircularProgress,
   Container,
+  IconButton,
+  InputAdornment,
   Paper,
   TextField,
   Typography,
 } from '@mui/material';
-import type { ActionState } from '../../interfaces';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { schemaUser, type UserFormValues } from '../../models';
-import { createInitialState, hanleZodError } from '../../helpers';
-import { useAlert, useAxios } from '../../hooks';
-import { Link, useNavigate } from 'react-router-dom';
-import { useActionState } from 'react';
+import { hanleZodError } from '../../helpers';
+import { useActionState, useAlert, useAxios } from '../../hooks';
+import type { ActionState } from '../../interfaces';
 
 type UserActionState = ActionState<UserFormValues>;
-const initialState = createInitialState<UserFormValues>();
-export const UserPage = () => {
+
+const initialFormData: UserFormValues = {
+  username: '',
+  password: '',
+  confirmPassword: '',
+};
+
+export default function UserPage() {
   const axios = useAxios();
   const { showAlert } = useAlert();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const userId = searchParams.get('id');
 
-  const createUserApi = async (
-    _: UserActionState | undefined,
-    formData: FormData
-  ) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const [userFormData, setUserFormData] = useState<UserFormValues>(initialFormData);
+
+  // Hook para submit
+  const saveUserApi = async (_: UserActionState | undefined, formData: FormData) => {
     const rawData: UserFormValues = {
       username: formData.get('username') as string,
       password: formData.get('password') as string,
       confirmPassword: formData.get('confirmPassword') as string,
     };
+
     try {
       schemaUser.parse(rawData);
-      await axios.post('/users', {
-        username: rawData.username,
-        password: rawData.password,
-      });
-      showAlert('Usuario creado', 'success');
-      navigate('/login');
+
+      if (userId) {
+        // Editar usuario
+        await axios.put(`/users/${userId}`, {
+          username: rawData.username,
+          password: rawData.password || undefined,
+        });
+        showAlert('Usuario actualizado', 'success');
+      } else {
+        // Crear usuario
+        await axios.post('/users', {
+          username: rawData.username,
+          password: rawData.password,
+        });
+        showAlert('Usuario creado', 'success');
+      }
+
+      navigate('/users');
     } catch (error) {
       const err = hanleZodError<UserFormValues>(error, rawData);
       showAlert(err.message, 'error');
@@ -45,41 +72,42 @@ export const UserPage = () => {
     }
   };
 
-  const [state, submitAction, isPending] = useActionState(
-    createUserApi,
-    initialState
-  );
+  const [_, submitAction, isPending] = useActionState(saveUserApi, { formData: initialFormData });
+
+  // Cargar usuario para edición
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (!userId) return;
+      try {
+        const res = await axios.get(`/users/${userId}`);
+        const user = res.data;
+        setUserFormData({
+          username: user.username,
+          password: '',
+          confirmPassword: '',
+        });
+      } catch {
+        showAlert('Error al cargar usuario', 'error');
+      }
+    };
+    fetchUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   return (
     <Container
       maxWidth={false}
-      sx={{
-        backgroundColor: '#242424',
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-      }}
+      sx={{ backgroundColor: '#242424', width: '100%', display: 'flex', justifyContent: 'center' }}
     >
       <Box
-        sx={{
-          maxWidth: 'sm',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          textAlign: 'center',
-          height: '100vh',
-        }}
+        sx={{ maxWidth: 'sm', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', height: '100vh' }}
       >
         <Paper elevation={3} sx={{ padding: 4 }}>
           <Typography component={'h1'} variant="h4" gutterBottom>
-            Nuevo Usuario
+            {userId ? 'Editar Usuario' : 'Nuevo Usuario'}
           </Typography>
 
-          {/*  {Object.keys(state?.errors ?? {}).length !== 0 && (
-          <Alert severity="error">{state?.message}</Alert>
-        )} */}
-
-          <Box action={submitAction} component={'form'} sx={{ width: '100%' }}>
+          <Box component="form" onSubmit={submitAction} sx={{ width: '100%' }}>
             <TextField
               name="username"
               margin="normal"
@@ -90,33 +118,49 @@ export const UserPage = () => {
               autoFocus
               type="text"
               disabled={isPending}
-              defaultValue={state?.formData?.username}
-              error={!!state?.errors?.username}
-              helperText={state?.errors?.username}
+              value={userFormData.username}
+              onChange={(e) => setUserFormData((prev) => ({ ...prev, username: e.target.value }))}
             />
             <TextField
               name="password"
               margin="normal"
-              required
+              required={!userId}
               fullWidth
               label="Password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               disabled={isPending}
-              defaultValue={state?.formData?.password}
-              error={!!state?.errors?.password}
-              helperText={state?.errors?.password}
+              value={userFormData.password}
+              onChange={(e) => setUserFormData((prev) => ({ ...prev, password: e.target.value }))}
+              helperText={userId ? 'Dejar vacío para no cambiar' : ''}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton edge="end" onClick={() => setShowPassword((s) => !s)} tabIndex={-1}>
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
             <TextField
               name="confirmPassword"
               margin="normal"
-              required
+              required={!userId}
               fullWidth
               label="Repetir password"
-              type="password"
+              type={showConfirm ? 'text' : 'password'}
               disabled={isPending}
-              defaultValue={state?.formData?.confirmPassword}
-              error={!!state?.errors?.confirmPassword}
-              helperText={state?.errors?.confirmPassword}
+              value={userFormData.confirmPassword}
+              onChange={(e) => setUserFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton edge="end" onClick={() => setShowConfirm((s) => !s)} tabIndex={-1}>
+                      {showConfirm ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
             <Button
               type="submit"
@@ -124,18 +168,18 @@ export const UserPage = () => {
               variant="contained"
               sx={{ mt: 3, mb: 2, height: 48 }}
               disabled={isPending}
-              startIcon={
-                isPending ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : null
-              }
+              startIcon={isPending ? <CircularProgress size={20} color="inherit" /> : null}
             >
-              {isPending ? 'Cargando...' : 'Registrar'}
+              {isPending ? 'Cargando...' : userId ? 'Actualizar' : 'Registrar'}
             </Button>
-            <Link to="/login">Ir a login</Link>
+            {!userId && (
+              <Button fullWidth onClick={() => navigate('/login')}>
+                Ir a login
+              </Button>
+            )}
           </Box>
         </Paper>
       </Box>
     </Container>
   );
-};
+}

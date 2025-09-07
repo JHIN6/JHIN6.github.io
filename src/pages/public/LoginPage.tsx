@@ -4,26 +4,30 @@ import {
   Button,
   CircularProgress,
   Container,
+  IconButton,
+  InputAdornment,
   Paper,
   TextField,
   Typography,
 } from '@mui/material';
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { shemaLogin, type LoginFormValues } from '../../models';
 import type { ActionState } from '../../interfaces';
 import { createInitialState, hanleZodError } from '../../helpers';
 import { useAlert, useAuth, useAxios } from '../../hooks';
 import { Link, useNavigate } from 'react-router-dom';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 export type LoginActionState = ActionState<LoginFormValues>;
 const initialState = createInitialState<LoginFormValues>();
-//const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const LoginPage = () => {
+export default function LoginPage() {
   const axios = useAxios();
   const { login } = useAuth();
   const { showAlert } = useAlert();
   const navigate = useNavigate();
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const loginApi = async (
     _: LoginActionState | undefined,
@@ -35,7 +39,6 @@ export const LoginPage = () => {
     };
     try {
       shemaLogin.parse(rawData);
-      //await delay(3000);
       const response = await axios.post('/login', rawData);
       if (!response?.data?.token) throw new Error('No existe el token');
       login(response.data.token, { username: rawData.username });
@@ -108,11 +111,24 @@ export const LoginPage = () => {
               required
               fullWidth
               label="Password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               disabled={isPending}
               defaultValue={state?.formData?.password}
               error={!!state?.errors?.password}
               helperText={state?.errors?.password}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      onClick={() => setShowPassword((s) => !s)}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
             <Button
               type="submit"
@@ -128,10 +144,10 @@ export const LoginPage = () => {
             >
               {isPending ? 'Cargando...' : 'Ingresar'}
             </Button>
-            <Link to='/userRegister'>Registrar nuevo usuario</Link>
+            <Link to="/userRegister">Registrar nuevo usuario</Link>
           </Box>
         </Paper>
       </Box>
     </Container>
   );
-};
+}

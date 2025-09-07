@@ -1,8 +1,10 @@
+// src/pages/private/PerfilPage.tsx
 import { Avatar, Box, Card, CardContent, Typography } from '@mui/material';
 import { useAuth } from '../../hooks';
 
-export const PerfilPage = () => {
+const PerfilPage = () => {
   const { user } = useAuth();
+
   return (
     <Box
       sx={{
@@ -36,7 +38,7 @@ export const PerfilPage = () => {
           <Typography variant="h5" fontWeight={'bold'} gutterBottom>
             {user?.username}
           </Typography>
-          <Typography variant='body2' color='text.primary'>
+          <Typography variant="body2" color="text.primary">
             Bienvenido a tu perfil 🤝
           </Typography>
         </CardContent>
@@ -44,3 +46,5 @@ export const PerfilPage = () => {
     </Box>
   );
 };
+
+export default PerfilPage;

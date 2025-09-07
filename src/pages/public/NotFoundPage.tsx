@@ -1,7 +1,7 @@
 import { Button, Container, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-export const NotFoundPage = () => {
+const NotFoundPage = () => {
   const navigate = useNavigate();
   return (
     <Container
@@ -30,3 +30,5 @@ export const NotFoundPage = () => {
     </Container>
   );
 };
+
+export default NotFoundPage;

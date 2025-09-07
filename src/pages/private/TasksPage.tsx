@@ -1,3 +1,4 @@
+// src/pages/private/TasksPage.tsx
 import { Box } from '@mui/material';
 import {
   TaskDialog,
@@ -13,7 +14,7 @@ import { useAlert, useAxios } from '../../hooks';
 import { errorHelper, hanleZodError } from '../../helpers';
 import { schemaTask, type TaskFormValues } from '../../models';
 
-export const TasksPage = () => {
+const TasksPage = () => {
   const { showAlert } = useAlert();
   const axios = useAxios();
 
@@ -135,7 +136,7 @@ export const TasksPage = () => {
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
         setSearch={setSearch}
-      ></TaskFilter>
+      />
 
       {/* Tabla */}
       <TaskTabla
@@ -160,3 +161,5 @@ export const TasksPage = () => {
     </Box>
   );
 };
+
+export default TasksPage;
