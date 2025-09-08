@@ -72,7 +72,11 @@ export default function UserPage() {
     }
   };
 
-  const [_, submitAction, isPending] = useActionState(saveUserApi, { formData: initialFormData });
+ const [_, submitAction, isPending] = useActionState(saveUserApi, {
+  formData: initialFormData,
+  errors: {},
+  message: "",
+});
 
   // Cargar usuario para edición
   useEffect(() => {

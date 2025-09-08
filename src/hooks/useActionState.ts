@@ -1,15 +1,12 @@
-import { useState } from 'react';
+import { useState } from "react";
+import type { ActionState } from "../interfaces/actionState.interface";
 
-export interface ActionState<T> {
-  formData?: T;
-  errors?: Partial<Record<keyof T, string>>;
-}
 
 export function useActionState<T>(
   action: (state: ActionState<T> | undefined, formData: FormData) => Promise<any>,
   initialState: ActionState<T>
 ) {
-  const [state, setState] = useState<ActionState<T>>(initialState);
+  const [state] = useState<ActionState<T>>(initialState); // ya no usamos setState
   const [isPending, setIsPending] = useState(false);
 
   const submitAction = async (event: React.FormEvent<HTMLFormElement>) => {
